@@ -72,6 +72,7 @@ Create this script file under `/etc/systemd/system/ptouch_bot.service`
 Description=P-Touch Bot
 
 [Service]
+ExecStartPre=sudo chmod -R 777 /dev/bus/usb/
 ExecStart=python3 /home/pi/ptouch_bot/ptouch_bot.py
 
 [Install]
