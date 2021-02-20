@@ -11,7 +11,9 @@ Needed packages that were missing from the Pi Zero:
 libusb-1.0-0-dev libgd-dev autopoint autoconf git gawk
 ```
 
-## Get a utility to print from a linux machine
+## Printing from Linux
+
+We need to build this utility in oder to print from a linux machine
 
 ```console
 cd ~
@@ -19,13 +21,10 @@ git clone https://mockmoon-cybernetics.ch/cgi/cgit/linux/ptouch-print.git/
 cd ptouch-print
 ```
 
-We need to fix some error in the source files
+Before building, we should fix an error in one of the source files.  
+`src/libptouch.c` line 180 change from `%ld` to `%u`
 
-```
-src/libptouch.c line 180: change from %ld to %u
-```
-
-build and install
+Build and Install
 
 ```console
 ./autogen.sh
@@ -34,15 +33,15 @@ make
 sudo make install
 ```
 
-finally make the usb bus accessible without using `sudo`
+Finally make the USB bus accessible without using `sudo`
 
 ```console
 sudo chmod -R 777 /dev/bus/usb
 ```
 
-##Telegram Bot for Python
+## Telegram Bot
 
-Install `python-telegram-bot`
+I used python-telegram-bot for this job.
 
 ```console
 cd ~
@@ -55,17 +54,15 @@ python3 setup.py install
 
 Add your bot token and allowed user IDs to `print_consts.py`  
 
-## Run the Bot
-
-run the bot:
+## Running the Bot
 
 ```console
 python3 ptouch_bot.py
 ```
 
-## Install systemd startup script
+## Startup Service
 
-Create this script file under `/etc/systemd/system/ptouch_bot.service`
+Create a service file under `/etc/systemd/system/ptouch_bot.service`:
 
 ```console
 [Unit]
@@ -79,7 +76,7 @@ ExecStart=python3 /home/pi/ptouch_bot/ptouch_bot.py
 WantedBy=multi-user.target
 ```
 
-Enable the service 
+Enable the service
 
 ```console
 sudo systemctl enable ptouch_bot.service
