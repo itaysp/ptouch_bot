@@ -67,8 +67,12 @@ Create a service file under `/etc/systemd/system/ptouch_bot.service`:
 ```console
 [Unit]
 Description=P-Touch Bot
+After=network-online.target
+Wants=network-online.target
 
 [Service]
+Restart=always
+RestartSec=3
 ExecStartPre=sudo chmod -R 777 /dev/bus/usb/
 ExecStart=python3 /home/pi/ptouch_bot/ptouch_bot.py
 
