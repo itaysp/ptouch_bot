@@ -17,12 +17,23 @@ We need to build this utility in oder to print from a linux machine
 
 ```console
 cd ~
-git clone https://mockmoon-cybernetics.ch/cgi/cgit/linux/ptouch-print.git/
+https://familie-radermacher.ch/cgi/cgit/linux/ptouch-print.git
 cd ptouch-print
 ```
 
 Before building, we should fix an error in one of the source files.  
-`src/libptouch.c` line 180 change from `%ld` to `%u`
+`src/libptouch.c` line 181 change from `%ld` to `%u`
+
+Before:
+
+```C
+fprintf(stderr, _("write error: could send only %i of %ld bytes\n"), tx, len);
+```
+
+After:
+```C
+fprintf(stderr, _("write error: could send only %i of %u bytes\n"), tx, len);
+```
 
 Build and Install
 
