@@ -1,11 +1,16 @@
 #!/usr/bin/env python3
 
-import print_consts
+import asyncio
 import logging
 import subprocess
-from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, CallbackContext
 from functools import wraps
+
+from bidi.algorithm import get_display
+from telegram import ForceReply, Update
+from telegram.ext import (Application, CommandHandler, ContextTypes,
+                          MessageHandler, filters)
+
+import print_consts
 
 # Enable logging
 logging.basicConfig(
@@ -24,51 +29,51 @@ def restricted(func):
         return func(update, context, *args, **kwargs)
     return wrapped
 
+async def run_ptouch_info() -> str:
+    try:
+        output = subprocess.check_output(
+            ['ptouch-print', '--info'],
+            stderr=subprocess.STDOUT)
+        output = output.decode().strip()
+        return output
+    except subprocess.CalledProcessError as e:
+        return e.output.decode()
 
-# Define a few command handlers. These usually take the two arguments update and
-# context. Error handlers also receive the raised TelegramError object in error.
 @restricted
-def start(update: Update, context: CallbackContext) -> None:
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /start is issued."""
-    help_cmd = subprocess.check_output('ptouch-print',  '--info')
-    update.message.reply_text(help_cmd)
+    help_cmd = await run_ptouch_info()
+    await update.message.reply_text(help_cmd)
 
 @restricted
-def help_command(update: Update, context: CallbackContext) -> None:
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
     """Send a message when the command /help is issued."""
-    update.message.reply_text('Help!')
+    help_cmd = await run_ptouch_info()
+    await update.message.reply_text(help_cmd)
 
 @restricted
-def print_sticker(update: Update, context: CallbackContext) -> None:
-    """Echo the user message."""
-    print_text = update.message.text.splitlines()
-    update.message.reply_text("Printing\n\"" + update.message.text +"\"")
+async def print_sticker(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Print the user message."""
+    print_text = get_display(update.message.text).splitlines()
+    await update.message.reply_text("Printing\n\"" + update.message.text +"\"")
     cmd = ['ptouch-print', '--debug', '--pad', print_consts.PADDING , '--text'] + print_text
-    print(cmd)
+    logger.info(cmd)
     subprocess.call(cmd)
 
 def main():
     """Start the bot."""
-    # Create the Updater and pass it your bot's token.
-    updater = Updater(token=print_consts.TOKEN, use_context=True)
-
-    # Get the dispatcher to register handlers
-    dispatcher = updater.dispatcher
+    # Create the Application
+    application = Application.builder().token(print_consts.TOKEN).build()
 
     # on different commands - answer in Telegram
-    dispatcher.add_handler(CommandHandler("start", start))
-    dispatcher.add_handler(CommandHandler("help", help_command))
+    application.add_handler(CommandHandler("start", start))
+    application.add_handler(CommandHandler("help", help_command))
 
-    # on noncommand i.e message - echo the message on Telegram
-    dispatcher.add_handler(MessageHandler(Filters.text & ~Filters.command, print_sticker))
+    # Add print command handler for all texts (filter out commands)
+    application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, print_sticker))
 
-    # Start the Bot
-    updater.start_polling()
-
-    # Run the bot until you press Ctrl-C or the process receives SIGINT,
-    # SIGTERM or SIGABRT. This should be used most of the time, since
-    # start_polling() is non-blocking and will stop the bot gracefully.
-    updater.idle()
+    # Run the bot until the user presses Ctrl-C
+    application.run_polling()    
 
 if __name__ == '__main__':
     main()
